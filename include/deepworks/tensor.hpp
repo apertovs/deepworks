@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <iosfwd>
 
 #include <deepworks/shape.hpp>
 
@@ -47,5 +48,7 @@ struct Tensor::Descriptor {
     Type *m_data{nullptr};
     size_t m_total{0ul};
 };
+
+std::ostream& operator<<(std::ostream& stream, const Tensor& tensor);
 
 } // namespace deepworks

@@ -2,6 +2,7 @@
 
 #include <numeric>
 #include <algorithm>
+#include <iostream>
 
 namespace deepworks {
 
@@ -98,6 +99,62 @@ const Strides &Tensor::strides() const {
 
 const Shape &Tensor::shape() const {
     return m_descriptor->m_shape;
+}
+
+namespace {
+template<class T>
+struct View {
+    const T *data;
+    size_t length;
+};
+
+void PrintArray(const View<float> &tensor_data, std::ostream &stream) {
+    stream << "[";
+    size_t index = 0;
+    for (; index + 1 < tensor_data.length; ++index) {
+        stream << tensor_data.data[index] << ", ";
+    }
+    stream << tensor_data.data[index] << "]";
+}
+
+void PrintTensor(const View<float> &tensor_data, const View<int> &shape, std::ostream &stream) {
+    if (tensor_data.length == 0ul || shape.length == 0ul) {
+        stream << "Tensor()";
+        return;
+    }
+    if (shape.length == 1ul) {
+        stream << "Tensor(";
+        PrintArray(tensor_data, stream);
+        stream << ")";
+        return;
+    }
+    stream << "Tensor([";
+    const size_t current_dim = shape.data[0];
+    const size_t elements_in_dim = tensor_data.length / current_dim;
+    for (size_t index = 0; index < current_dim; ++index) {
+        PrintTensor(View<float>{tensor_data.data + index * elements_in_dim, elements_in_dim},
+                    View<int>{shape.data + 1, shape.length - 1},
+                    stream);
+        if (index + 1 != current_dim) {
+            stream << ", " << std::endl;
+        }
+    }
+    stream << "])";
+}
+}
+
+
+std::ostream &operator<<(std::ostream &stream, const Tensor &tensor) {
+    if (tensor.total() == 0) {
+        return stream;
+    }
+    const auto shape = tensor.shape();
+    const auto shape_view = View<int>{shape.data(), shape.size()};
+    const auto data_view = View<float>{tensor.data(), tensor.total()};
+
+    PrintTensor(data_view, shape_view, stream);
+
+    return stream;
 }
 
 } // namespace deepworks
